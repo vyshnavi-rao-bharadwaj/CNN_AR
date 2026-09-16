@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CNN Image Processing - Student Edition</title>
+
+    <!-- A-Frame Library -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050510;
+        }
+
+        /* Top Header */
+        #header {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 90%;
+            max-width: 500px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #38bdf8;
+            padding: 10px 15px;
+            border-radius: 12px;
+            border: 1px solid #38bdf8;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        #header h1 {
+            margin: 0;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Bottom Student Explainer Card */
+        #explainer-card {
+            position: fixed;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 90%;
+            max-width: 500px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid #475569;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+        }
+
+        #step-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #facc15;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #step-desc {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #e2e8f0;
+            margin: 0;
+        }
+
+        /* Navigation Controls */
+        #nav-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .nav-btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .nav-btn:disabled {
+            background: #334155;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header UI -->
+    <div id="header">
+        <h1>CNN Image Processing Pipeline</h1>
+    </div>
+
+    <!-- Student Explainer Overlay -->
+    <div id="explainer-card">
+        <div id="step-title">
+            <span id="title-text">Step 1: Input Image</span>
+            <span id="step-counter" style="font-size: 11px; color: #94a3b8;">1 / 8</span>
+        </div>
+        <p id="step-desc">
+            Computers don't see images like humans do. Instead, the image is converted into a grid of numbers called <b>Pixels</b> (0 = Black, 255 = White).
+        </p>
+        
+        <div id="nav-controls">
+            <button class="nav-btn" id="prev-btn" onclick="moveStep(-1)" disabled>← Previous</button>
+            <button class="nav-btn" id="next-btn" onclick="moveStep(1)">Next Step →</button>
+        </div>
+    </div>
+
+    <a-scene embedded vr-mode-ui="enabled: false" renderer="antialias: true; logarithmicDepthBuffer: true;">
+        
+        <!-- CAMERA -->
+        <a-entity id="mainCamera" camera look-controls position="-3 1 5"
+                  animation="property: position; to: -3 1 5; dur: 800; easing: easeInOutCubic;"></a-entity>
+        
+        <a-sky color="#020617"></a-sky>
+
+        <!-- 3D PIPELINE MODEL -->
+        <a-entity id="cnnModel" position="0 0 0">
+
+            <!-- STEP 1 : INPUT IMAGE -->
+            <a-plane position="-3 0.9 0" width="1.8" height="1.8" color="#1e293b"></a-plane>
+            <a-entity id="inputPixels">
+                <a-box position="-3.6 1.4 0.03" width="0.45" height="0.45" depth="0.04" color="#FFFFFF"></a-box>
+                <a-box position="-3.15 1.4 0.03" width="0.45" height="0.45" depth="0.04" color="#AAAAAA"></a-box>
+                <a-box position="-2.7 1.4 0.03" width="0.45" height="0.45" depth="0.04" color="#555555"></a-box>
+                <a-box position="-3.6 0.95 0.03" width="0.45" height="0.45" depth="0.04" color="#CCCCCC"></a-box>
+                <a-box position="-3.15 0.95 0.03" width="0.45" height="0.45" depth="0.04" color="#FFFFFF"></a-box>
+                <a-box position="-2.7 0.95 0.03" width="0.45" height="0.45" depth="0.04" color="#777777"></a-box>
+                <a-box position="-3.6 0.5 0.03" width="0.45" height="0.45" depth="0.04" color="#444444"></a-box>
+                <a-box position="-3.15 0.5 0.03" width="0.45" height="0.45" depth="0.04" color="#999999"></a-box>
+                <a-box position="-2.7 0.5 0.03" width="0.45" height="0.45" depth="0.04" color="#FFFFFF"></a-box>
+            </a-entity>
+
+            <!-- FLOW 1 -> 2 -->
+            <a-sphere radius="0.06" color="#facc15" position="-2 0.95 0"
+                      animation="property: position; from: -2.1 0.95 0; to: -1.8 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 2 : PRE-PROCESSING -->
+            <a-box position="-1 0.95 0" width="1.4" height="1.4" depth="0.12" color="#334155"></a-box>
+
+            <!-- FLOW 2 -> 3 -->
+            <a-sphere radius="0.06" color="#facc15" position="0 0.95 0"
+                      animation="property: position; from: -0.1 0.95 0; to: 0.3 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 3 : CONVOLUTION -->
+            <a-plane position="0.6 0.9 0" width="1.5" height="1.5" color="#1e293b"></a-plane>
+            <a-plane position="1.8 0.9 0.08" width="0.9" height="0.9" color="#f43f5e"
+                     animation="property: position; from: 1.8 1.35 0.08; to: 1.8 0.45 0.08; dir: alternate; loop: true; dur: 1500; easing: easeInOutSine;"></a-plane>
+
+            <!-- FLOW 3 -> 4 -->
+            <a-sphere radius="0.06" color="#facc15" position="2.4 0.95 0"
+                      animation="property: position; from: 2.3 0.95 0; to: 2.7 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 4 : FEATURE MAP -->
+            <a-plane position="3.3 0.9 0" width="1.5" height="1.5" color="#064e3b"></a-plane>
+            <a-box position="2.95 1.3 0.08" width="0.35" height="0.35" depth="0.05" color="#10b981"></a-box>
+            <a-box position="3.3 1.3 0.08" width="0.35" height="0.35" depth="0.05" color="#10b981"></a-box>
+            <a-box position="3.65 1.3 0.08" width="0.35" height="0.35" depth="0.05" color="#064e3b"></a-box>
+            <a-box position="2.95 0.95 0.08" width="0.35" height="0.35" depth="0.05" color="#10b981"></a-box>
+
+            <!-- FLOW 4 -> 5 -->
+            <a-sphere radius="0.06" color="#facc15" position="4.3 0.95 0"
+                      animation="property: position; from: 4.1 0.95 0; to: 4.5 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 5 : POOLING -->
+            <a-plane position="5.3 0.95 0" width="1.2" height="1.2" color="#7c2d12"></a-plane>
+
+            <!-- FLOW 5 -> 6 -->
+            <a-sphere radius="0.06" color="#facc15" position="6.2 0.95 0"
+                      animation="property: position; from: 6.0 0.95 0; to: 6.4 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 6 : FLATTEN -->
+            <a-box position="6.8 0.95 0" width="0.25" height="1.5" depth="0.15" color="#a855f7"
+                   animation="property: rotation; to: 0 0 360; loop: true; dur: 4000; easing: linear;"></a-box>
+
+            <!-- FLOW 6 -> 7 -->
+            <a-sphere radius="0.06" color="#facc15" position="8.1 0.95 0"
+                      animation="property: position; from: 7.9 0.95 0; to: 8.3 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 7 : NEURAL NETWORK -->
+            <a-sphere position="8.7 1.15 0" radius="0.16" color="#38bdf8"></a-sphere>
+            <a-sphere position="8.7 0.65 0" radius="0.16" color="#38bdf8"></a-sphere>
+            <a-sphere position="9.5 1.15 0" radius="0.16" color="#f43f5e"></a-sphere>
+            <a-sphere position="9.5 0.65 0" radius="0.16" color="#f43f5e"></a-sphere>
+
+            <a-entity line="start: 8.7 1.15 0; end: 9.5 1.15 0; color: #38bdf8"></a-entity>
+            <a-entity line="start: 8.7 1.15 0; end: 9.5 0.65 0; color: #38bdf8"></a-entity>
+            <a-entity line="start: 8.7 0.65 0; end: 9.5 1.15 0; color: #38bdf8"></a-entity>
+            <a-entity line="start: 8.7 0.65 0; end: 9.5 0.65 0; color: #38bdf8"></a-entity>
+
+            <!-- FLOW 7 -> 8 -->
+            <a-sphere radius="0.06" color="#facc15" position="10 0.95 0"
+                      animation="property: position; from: 9.8 0.95 0; to: 10.2 0.95 0; loop: true; dur: 800; easing: linear;"></a-sphere>
+
+            <!-- STEP 8 : OUTPUT CLASSIFICATION -->
+            <a-cylinder position="10.8 0.9 0" radius="0.65" height="0.15" rotation="90 0 0" color="#0284c7"
+                        animation="property: scale; from: 1 1 1; to: 1.15 1.15 1.15; dir: alternate; loop: true; dur: 1000;"></a-cylinder>
+
+        </a-entity>
+    </a-scene>
+
+    <!-- Interactive Navigation Script -->
+    <script>
+        const steps = [
+            {
+                title: "Step 1: Input Image (Pixel Grid)",
+                desc: "Computers don't see images like humans. An input image is converted into a grid of <b>pixel values</b> representing colors and brightness.",
+                cameraX: -3
+            },
+            {
+                title: "Step 2: Pre-Processing",
+                desc: "Before analysis, the raw image is cleaned: resized to standard dimensions, normalized (adjusting contrast), and filtered to remove noise.",
+                cameraX: -1
+            },
+            {
+                title: "Step 3: Convolution (Feature Extraction)",
+                desc: "A small matrix called a <b>Kernel Filter</b> (red box) slides across the image. It calculates values to detect basic features like sharp edges or curves.",
+                cameraX: 1.2
+            },
+            {
+                title: "Step 4: Feature Map",
+                desc: "The result of convolution is a <b>Feature Map</b> (green grid). It highlights where important features (like lines or patterns) exist in the image.",
+                cameraX: 3.3
+            },
+            {
+                title: "Step 5: Max Pooling",
+                desc: "<b>Pooling</b> reduces the size of the feature map. It keeps only the maximum values, making the model faster while retaining critical patterns.",
+                cameraX: 5.3
+            },
+            {
+                title: "Step 6: Flattening",
+                desc: "The 2D pooled feature map is converted into a long 1D list of numbers (a vector) so it can be fed into the final decision-making neural network.",
+                cameraX: 7.1
+            },
+            {
+                title: "Step 7: Neural Network Classifier",
+                desc: "The 1D numbers pass through interconnected artificial neurons. Each connection applies weights to evaluate features (e.g., 'Has ears? Has whiskers?').",
+                cameraX: 9.1
+            },
+            {
+                title: "Step 8: Final Classification Output",
+                desc: "The neural network gives a final confidence score prediction. For example: <b>CAT (92% Probability)</b>.",
+                cameraX: 10.8
+            }
+        ];
+
+        let currentStep = 0;
+
+        function moveStep(direction) {
+            currentStep += direction;
+
+            // Clamp index bounds
+            if (currentStep < 0) currentStep = 0;
+            if (currentStep >= steps.length) currentStep = steps.length - 1;
+
+            // Update Text Content
+            document.getElementById('title-text').innerText = steps[currentStep].title;
+            document.getElementById('step-desc').innerHTML = steps[currentStep].desc;
+            document.getElementById('step-counter').innerText = `${currentStep + 1} / ${steps.length}`;
+
+            // Smoothly move 3D Camera to target position
+            const targetX = steps[currentStep].cameraX;
+            const cameraEntity = document.getElementById('mainCamera');
+            cameraEntity.setAttribute('animation', `property: position; to: ${targetX} 1 5; dur: 800; easing: easeInOutCubic;`);
+
+            // Update Button States
+            document.getElementById('prev-btn').disabled = (currentStep === 0);
+            document.getElementById('next-btn').disabled = (currentStep === steps.length - 1);
+        }
+    </script>
+</body>
+</html>
